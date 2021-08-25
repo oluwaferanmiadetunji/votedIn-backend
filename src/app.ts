@@ -5,7 +5,7 @@ import hpp from 'hpp';
 import cors from 'cors';
 import compression from 'compression';
 import { connectDatabase } from './config/db';
-import { requestBodyTrim, errorHandler } from './helpers';
+import { requestBodyTrim, ApiError, errorConverter, errorHandler } from './helpers';
 
 // Routes
 import Routes from './routes';
@@ -47,10 +47,29 @@ app.get('/', (req: Request, res: Response) => {
 	});
 });
 
+const router = express.Router();
+
+const defaultRoutes = [
+	{
+		path: '/',
+		route: Routes,
+	},
+];
+
+defaultRoutes.forEach((route) => {
+	router.use(route.path, route.route);
+});
+
 // Mount routes
-app.use('/', Routes);
+app.use('/', router);
 
 // Use errorHandler middleware
+app.use((req, res, next) => {
+	next(new ApiError(404, 'Not found'));
+});
+
+app.use(errorConverter);
+
 app.use(errorHandler);
 
 export default app;

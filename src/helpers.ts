@@ -1,15 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
-import { ErrorResponse, FailureResponse } from './responses';
+import mongoose from 'mongoose';
+import Joi from 'joi';
 
-type ApplicationError = {
-	value?: string;
-	code?: any;
-	status: number;
-	message: string;
-	name: string;
-	stack?: string;
-	errors?: any;
-	constant?: any;
+const pick = (object: any, keys: any) => {
+	return keys.reduce((obj: any, key: any) => {
+		if (object && Object.prototype.hasOwnProperty.call(object, key)) {
+			// eslint-disable-next-line no-param-reassign
+			obj[key] = object[key];
+		}
+		return obj;
+	}, {});
 };
 
 const requestBodyTrim = (req: Request, res: Response, next: NextFunction) => {
@@ -19,33 +19,59 @@ const requestBodyTrim = (req: Request, res: Response, next: NextFunction) => {
 	next();
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction): Response => {
-	let error = { ...err } as ApplicationError;
-	error.message = err.message;
-
-	// Mongoose bad ObjectId
-	if (error.name === 'CastError') {
-		const message = `Resource not found`;
-		error = new ErrorResponse(message, 404, error.constant);
-	}
-
-	// Mongoose duplicate key
-	if (error.code === 11000) {
-		const message = 'Duplicate field value entered';
-		error = new ErrorResponse(message, 400, error.constant);
-	}
-
-	// Mongoose validation error
-	if (error.name === 'ValidationError') {
-		const message = Object.values(error.errors)
-			.map((error: any) => error.message)
-			.join();
-
-		error = new ErrorResponse(message, 400, error.constant);
-	}
-
-	return res.status(error.status || 500).json(new FailureResponse(error.code, error.message));
+const catchAsync = (fn: any) => (req: Request, res: Response, next: NextFunction) => {
+	Promise.resolve(fn(req, res, next)).catch((err) => next(err));
 };
 
-export { requestBodyTrim, errorHandler };
+class ApiError extends Error {
+	statusCode: any;
+	constructor(statusCode: any, message: any, stack = '') {
+		super(message);
+		this.statusCode = statusCode;
+		if (stack) {
+			this.stack = stack;
+		} else {
+			Error.captureStackTrace(this, this.constructor);
+		}
+	}
+}
+
+const errorConverter = (err: any, req: Request, res: Response, next: NextFunction) => {
+	let error = err;
+	if (!(error instanceof ApiError)) {
+		const statusCode = error.statusCode || error instanceof mongoose.Error ? 400 : 500;
+		const message = error.message;
+		error = new ApiError(statusCode, message, err.stack);
+	}
+	next(error);
+};
+
+const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
+	let { statusCode, message } = err;
+
+	res.locals.errorMessage = err.message;
+
+	const response = {
+		code: statusCode,
+		message,
+	};
+
+	res.status(statusCode).send(response);
+};
+
+const validate = (schema: any) => (req: Request, res: Response, next: NextFunction) => {
+	const validSchema = pick(schema, ['params', 'query', 'body']);
+	const object = pick(req, Object.keys(validSchema));
+	const { value, error } = Joi.compile(validSchema)
+		.prefs({ errors: { label: 'key' } })
+		.validate(object);
+
+	if (error) {
+		const errorMessage = error.details.map((details) => details.message).join(', ');
+		return next(new ApiError(400, errorMessage));
+	}
+	Object.assign(req, value);
+	return next();
+};
+
+export { requestBodyTrim, errorHandler, catchAsync, ApiError, errorConverter, validate };

@@ -3,8 +3,6 @@ import { MONGO_URI } from './index';
 
 const options: any = {
 	useNewUrlParser: true,
-	useCreateIndex: true,
-	useFindAndModify: false,
 	useUnifiedTopology: true,
 };
 
