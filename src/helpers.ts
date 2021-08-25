@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import Joi from 'joi';
+import twilio from './config/twilio';
 
 const pick = (object: any, keys: any) => {
 	return keys.reduce((obj: any, key: any) => {
@@ -52,7 +53,6 @@ const errorHandler = (err: any, req: Request, res: Response, next: NextFunction)
 	res.locals.errorMessage = err.message;
 
 	const response = {
-		code: statusCode,
 		message,
 	};
 
@@ -74,4 +74,22 @@ const validate = (schema: any) => (req: Request, res: Response, next: NextFuncti
 	return next();
 };
 
-export { requestBodyTrim, errorHandler, catchAsync, ApiError, errorConverter, validate };
+const generateCode = () => Math.floor(Math.random() * 1000000);
+
+const sendSMS = async (mobile: string, message: string) => {
+	try {
+		const text = {
+			to: `${mobile}`,
+			from: '+13058422393',
+			body: message,
+		};
+
+		const sms = await twilio.messages.create(text);
+
+		console.log(`Successfully sent message to ${mobile} with message ID: ${sms.sid}`);
+	} catch (err) {
+		console.log(`Send SMS failed with error: ${err.message}`);
+	}
+};
+
+export { generateCode, requestBodyTrim, errorHandler, catchAsync, ApiError, errorConverter, validate, sendSMS };

@@ -9,4 +9,24 @@ const SendVerificationCode = {
 	}),
 };
 
-export default { SendVerificationCode };
+const VerifyAccount = {
+	body: Joi.object().keys({
+		code: Joi.string().required(),
+		phoneNumber: Joi.string().required(),
+	}),
+};
+
+const LoginAccount = {
+	body: Joi.object().keys({
+		matricNumber: Joi.string().required(),
+	}),
+};
+
+const Verify = {
+	body: Joi.object().keys({
+		code: Joi.string().required(),
+		matricNumber: Joi.string().required(),
+	}),
+};
+
+export default { SendVerificationCode, VerifyAccount, LoginAccount, Verify };
