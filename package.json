@@ -21,16 +21,19 @@
 	},
 	"homepage": "https://github.com/oluwaferanmiadetunji/votedIn-backend#readme",
 	"devDependencies": {
+		"@types/bcryptjs": "^2.4.2",
 		"@types/compression": "^1.7.1",
 		"@types/cors": "^2.8.12",
 		"@types/hpp": "^0.2.2",
 		"@types/node": "^16.7.1",
+		"@types/validator": "^13.6.3",
 		"nodemon": "^2.0.12",
 		"ts-node": "^10.2.1",
 		"typescript": "^4.3.5"
 	},
 	"dependencies": {
 		"@types/express": "^4.17.13",
+		"bcryptjs": "^2.4.3",
 		"compression": "^1.7.4",
 		"cors": "^2.8.5",
 		"crypto-random-string": "^4.0.0",
@@ -41,6 +44,7 @@
 		"hpp": "^0.2.3",
 		"joi": "^17.4.2",
 		"mongoose": "^6.0.0",
-		"twilio": "^3.67.0"
+		"twilio": "^3.67.0",
+		"validator": "^13.6.0"
 	}
 }
